@@ -21,7 +21,8 @@ class MyApp extends StatelessWidget {
       title: 'Chat boot',
       theme: ThemeData(primarySwatch: Colors.lightBlue),
       debugShowCheckedModeBanner: false,
-      home: const ChatPage(),
+      home: const LoginPage(),
+
     );
   }
 }
@@ -312,6 +313,39 @@ class _ChatPageState extends State<ChatPage> {
             ),
         ],
       ),
+      drawer: Drawer(
+  child: ListView(
+    padding: EdgeInsets.zero,
+    children: [
+      const DrawerHeader(
+        decoration: BoxDecoration(color: Colors.blue),
+        child: Text('Bienvenue', style: TextStyle(color: Colors.white, fontSize: 20)),
+      ),
+      ListTile(
+        leading: const Icon(Icons.history),
+        title: const Text('Historique'),
+        onTap: () {
+          // Tu peux créer une page d’historique ou afficher un modal
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Historique à venir...')),
+          );
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.logout),
+        title: const Text('Déconnexion'),
+        onTap: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+          );
+        },
+      ),
+    ],
+  ),
+),
+
       body: Column(
         children: [
           Expanded(
@@ -462,6 +496,73 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  String _error = '';
+
+  void _login() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email == 'user@example.com' && password == '123456') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ChatPage()),
+      );
+    } else {
+      setState(() => _error = 'Identifiants incorrects');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Connexion', style: TextStyle(fontSize: 24)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Mot de passe'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _login,
+                child: const Text('Se connecter'),
+              ),
+              if (_error.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(_error, style: const TextStyle(color: Colors.red)),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
