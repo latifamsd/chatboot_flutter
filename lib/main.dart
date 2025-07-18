@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 const String geminiApiKey =
-    'AIzaSyAk73LwFLKQt-PTuqoX3L_RuF0gx8sQD7k'; // TODO: move to .env or secure storage
+    'AIzaSyAk73LwFLKQt-PTuqoX3L_RuF0gx8sQD7k'; 
 
 void main() {
   runApp(const MyApp());
