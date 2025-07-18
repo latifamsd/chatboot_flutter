@@ -6,8 +6,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-const String geminiApiKey =
-    'AIzaSyAk73LwFLKQt-PTuqoX3L_RuF0gx8sQD7k'; 
+const String geminiApiKey = 'AIzaSyAk73LwFLKQt-PTuqoX3L_RuF0gx8sQD7k';
 
 void main() {
   runApp(const MyApp());
@@ -19,8 +18,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Chat',
-      theme: ThemeData(primarySwatch: Colors.deepPurple),
+      title: 'Chat boot',
+      theme: ThemeData(primarySwatch: Colors.lightBlue),
       debugShowCheckedModeBanner: false,
       home: const ChatPage(),
     );
@@ -56,10 +55,69 @@ class _ChatPageState extends State<ChatPage> {
     _initTts();
   }
 
+  // edit message
+  void _editMessage(int index) {
+    final message = _messages[index]['content'] ?? '';
+    final TextEditingController editController = TextEditingController(
+      text: message,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modifier le message'),
+        content: TextField(
+          controller: editController,
+          maxLines: null,
+          decoration: const InputDecoration(hintText: 'Nouveau message'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newText = editController.text.trim();
+              if (newText.isEmpty) return;
+
+              setState(() {
+                _messages[index]['content'] = newText;
+              });
+
+              // Supprimer l'ancienne réponse qui suit ce message utilisateur
+              if (_messages.length > index + 1 &&
+                  _messages[index + 1]['role'] == 'assistant') {
+                setState(() {
+                  _messages.removeAt(index + 1);
+                });
+              }
+
+              Navigator.pop(context); // fermer la boîte de dialogue
+
+              // Lancer une nouvelle requête avec le message modifié
+              setState(() => _isLoading = true);
+              final newReply = await _getGeminiResponse(newText);
+              setState(() {
+                _isLoading = false;
+                _messages.insert(index + 1, {
+                  'role': 'assistant',
+                  'content': newReply ?? 'Désolé, pas de réponse.',
+                });
+              });
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _initTts() async {
     _flutterTts = FlutterTts();
 
     await _flutterTts.setLanguage('fr-FR');
+    await _flutterTts.setLanguage('en-EN');
     await _flutterTts.setSpeechRate(0.5);
     await _flutterTts.setVolume(1.0);
     await _flutterTts.setPitch(1.0);
@@ -138,7 +196,8 @@ class _ChatPageState extends State<ChatPage> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reconnaissance vocale non disponible')));
+        const SnackBar(content: Text('Reconnaissance vocale non disponible')),
+      );
     }
   }
 
@@ -169,7 +228,10 @@ class _ChatPageState extends State<ChatPage> {
         });
       } else {
         setState(() {
-          _messages.add({'role': 'assistant', 'content': 'Désolé, pas de réponse.'});
+          _messages.add({
+            'role': 'assistant',
+            'content': 'Désolé, pas de réponse.',
+          });
         });
       }
       _isLoading = false;
@@ -179,7 +241,8 @@ class _ChatPageState extends State<ChatPage> {
   Future<String?> _getGeminiResponse(String prompt) async {
     try {
       final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$geminiApiKey');
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$geminiApiKey',
+      );
 
       final response = await http.post(
         url,
@@ -235,10 +298,11 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('💬 Chat'),
-        backgroundColor: Colors.black,
+        title: const Text('Talk with Gemini'),
+        backgroundColor: Colors.blue[900],
         foregroundColor: Colors.white,
         elevation: 4,
+        shadowColor: const Color.fromARGB(198, 14, 14, 14),
         actions: [
           if (_isSpeaking)
             IconButton(
@@ -261,15 +325,17 @@ class _ChatPageState extends State<ChatPage> {
                 final isUser = msg['role'] == 'user';
 
                 return Align(
-                  alignment:
-                      isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isUser
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     padding: const EdgeInsets.all(12),
                     constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.75),
+                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                    ),
                     decoration: BoxDecoration(
-                      color: isUser ? Colors.black : Colors.white,
+                      color: isUser ? Colors.blue[900] : Colors.white,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
@@ -305,15 +371,31 @@ class _ChatPageState extends State<ChatPage> {
                                         _currentSpeakingIndex == reversedIndex)
                                     ? Icons.pause_circle_filled
                                     : Icons.play_circle_fill,
-                                color: Colors.black,
+                                color: Colors.blue[900],
                                 size: 28,
                               ),
-                              tooltip: (_isSpeaking &&
+                              tooltip:
+                                  (_isSpeaking &&
                                       _currentSpeakingIndex == reversedIndex)
                                   ? 'Arrêter la lecture'
                                   : 'Lire à voix haute',
                               onPressed: () => _toggleSpeech(
-                                  msg['content'] ?? '', reversedIndex),
+                                msg['content'] ?? '',
+                                reversedIndex,
+                              ),
+                            ),
+                          ),
+                        if (isUser)
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              tooltip: 'Modifier le message',
+                              onPressed: () => _editMessage(reversedIndex),
                             ),
                           ),
                       ],
@@ -341,8 +423,9 @@ class _ChatPageState extends State<ChatPage> {
                 GestureDetector(
                   onTap: _isListening ? _stopListening : _startListening,
                   child: CircleAvatar(
-                    backgroundColor:
-                        _isListening ? Colors.redAccent : Colors.deepPurple,
+                    backgroundColor: _isListening
+                        ? Colors.redAccent
+                        : const Color.fromARGB(255, 73, 71, 200),
                     radius: 24,
                     child: Icon(
                       _isListening ? Icons.mic : Icons.mic_none,
@@ -362,8 +445,9 @@ class _ChatPageState extends State<ChatPage> {
                         borderRadius: BorderRadius.circular(25),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                      ),
                     ),
                     onSubmitted: (_) => _sendMessage(),
                   ),
@@ -371,7 +455,7 @@ class _ChatPageState extends State<ChatPage> {
                 const SizedBox(width: 10),
                 IconButton(
                   icon: const Icon(Icons.send),
-                  color: Colors.black,
+                  color: Colors.blue[900],
                   onPressed: _isLoading ? null : _sendMessage,
                 ),
               ],
